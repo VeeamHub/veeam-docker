@@ -220,6 +220,7 @@ docker run -itd --restart unless-stopped --name vbrrepo --device ${zvoldev} --mo
 printf "${green}Setup of Docker repo is complete!${nc}\n\n"
 
 # Install Sanoid to manage ZFS snapshots and revert-vbrrepo script
+mkdir -p /etc/sanoid
 printf "${green}Configuring Sanoid to manage ZFS snapshots and installing revert-vbrrepo script...${nc}\n"
 printf "[${zpool}/veeam/repo_vol]\n  use_template = vbrrepo\n  recursive = yes\n\n" > /etc/sanoid/sanoid.conf
 printf "#############################\n# templates below this line #\n#############################\n" >> /etc/sanoid/sanoid.conf
