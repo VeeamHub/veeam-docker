@@ -58,8 +58,8 @@ if [[ $proceed != "yes" ]]; then
 fi
 
 # Install required updates
-printf "\n${green}Installing ZFS tools and Docker support...${nc}\n"
-DEBIAN_FRONTEND=noninteractive apt-get -q -y install zfsutils-linux docker.io
+printf "\n${green}Installing Docker, ZFS tools, Sanoid, and UFW...${nc}\n"
+DEBIAN_FRONTEND=noninteractive apt-get -q -y install zfsutils-linux docker.io sanoid ufw
 
 # Setup ZVOL for repo storage
 printf "\n${green}Setting up ZFS for repository storage...${nc}\n"
@@ -108,7 +108,7 @@ zfs set refreservation=none ${zpool}/veeam/repo_vol
 zvoldev="/dev/zvol/${zpool}/veeam/repo_vol"
 printf "ZVOL ${yellow}${zvolname}${nc} created, formatting with XFS filesytem...\n"
 mkfs.xfs -b size=4096 -m crc=1,reflink=1 $zvoldev
-printf "ZVOL creation and XFS formatting complete!\n"
+printf "${green}ZVOL creation and XFS formatting complete!${nc}\n\n"
 
 # Generate new or reuse existing SSH keys for docker host
 printf "\n${green}Configure SSH host keys for docker container...${nc}\n"
@@ -202,53 +202,58 @@ do
       break
       ;;
     "4")
-      printf "Script aborted!\n"
+      printf "${red}Script aborted!${nc}\n"
       exit 2
       ;;
     *) printf "Invalid option $REPLY\n";
   esac
 done
 printf "Using public key file ${yellow}${pubkeyfile}${nc}"
+printf "${green}Docker SSH key configuration is complete!${nc}\n\n"
 
 # Pull Docker container
-printf "\n${green}Pulling Docker repo image from VeeamHub...${nc}\n"
+printf "${green}Pulling Docker repo image from VeeamHub repository on Docker Hub ...${nc}\n"
 docker pull veeamhub/vbrrepo:latest
 
 # Start repo container
 docker run -itd --restart unless-stopped --name vbrrepo --device ${zvoldev} --mount type=bind,source=${keypath},target=/keys --cap-add SYS_ADMIN --security-opt apparmor:unconfined --network=host -e REPO_VOL=${zvoldev} veeamhub/vbrrepo:latest
-printf "Setup of Docker repo is complete.\n\n"
+printf "${green}Setup of Docker repo is complete!${nc}\n\n"
 
-# Install Sanoid to take ZFS snapshots
-printf "${green}Installing Sanoid to manage ZFS snapshots...${nc}\n"
-wget https://github.com/VeeamHub/veeam-docker/raw/master/vbrrepo/sanoid_2.0.3_all.deb
-apt install ./sanoid_2.0.3_all.deb
+# Install Sanoid to manage ZFS snapshots and revert-vbrrepo script
+printf "${green}Configuring Sanoid to manage ZFS snapshots and installing revert-vbrrepo script...${nc}\n"
 printf "[${zpool}/veeam/repo_vol]\n  use_template = vbrrepo\n  recursive = yes\n\n" > /etc/sanoid/sanoid.conf
 printf "#############################\n# templates below this line #\n#############################\n" >> /etc/sanoid/sanoid.conf
 printf "\n[template_vbrrepo]\n  frequently = 32\n  hourly = 48\n  daily = 5\n" >> /etc/sanoid/sanoid.conf
 printf "  monthly = 0\n  yearly = 0\n  autosnap = yes\n  autoprune = yes\n" >> /etc/sanoid/sanoid.conf
 sudo systemctl enable sanoid.timer
 sudo systemctl start sanoid.timer
-printf "Sanoid installed and configured.\n\n"
-
-# Install revert vbrrepo script
-printf "${green}Installing snapshot revert helper script...${nc}\n"
-wget https://github.com/VeeamHub/veeam-docker/raw/master/vbrrepo/vbrrepo-revert.sh
-mv ./vbrrepo-revert.sh /usr/local/bin/.
-chmod 755 /usr/local/bin/vbrrepo-revert.sh
-chown root.root /usr/local/bin/vbrrepo-revert.sh
-printf "Snapshot revert helper script installed.\n"
+wget https://raw.githubusercontent.com/VeeamHub/veeam-docker/master/vbrrepo/revert-vbrrepo.sh
+mv ./revert-vbrrepo.sh /usr/local/bin/.
+chmod 755 /usr/local/bin/revert-vbrrepo.sh
+chown root.root /usr/local/bin/revert-vbrrepo.sh
+printf "${green}Sanoid is now configured and revert-vbrrepo helper script is installed!${nc}\n\n"
 
 # Setup local firewall rules for UFW
-apt install ufw
+printf "${green}Configuring firewall settings...${nc}\n"
+printf "SSH access to the container will be restricted to the VBR server only.\n"
 while [ -z $vbrip ]; do
-  read -e -
+  read -e -p "Enter the IP address of the Veeam Backup & Replication Server: " vbrip
 done
 
+printf "\nSSH access to the host will be restricted to the IP/subnet entered below: \n"
 while [ -z $mgmtip ]; do
+  read -e -p "Enter the IP addrress and/or subnet (x.x.x.x/24 format) for management access to the host: " mgmtip
 done
-#ufw default deny incoming
-#ufw default allow outgoing
-#ufw allow ssh
-#ufw allow 22222
-#ufw allow 2500:3300/tcp
+printf "${yellow}Setting up firewall rules...${nc}\n"
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow from $mgmtip to any port 22
+ufw allow from $vbrip to any port 22222
+ufw allow 2500:3300/tcp
+ufw enable
+ufw status verbose
+printf "${green}Fireall settup complete!${nc}\n\n"
+
+printf "${green}Docker container and host configuration is now complete and this system is ready to\n"
+printf "be used as a repository.  Thanks for using build-vbrrepo!${nc}\n\nc"
 
