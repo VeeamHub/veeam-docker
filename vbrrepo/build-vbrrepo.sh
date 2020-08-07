@@ -86,15 +86,15 @@ printf "This approach leaves some unreserved free space in the parent zpool that
 printf "in cases where an attacker tries to overwrite all backups and uses all available data/snapshot space.\n"
 printf "in the ${yellow}veeam${nc} dataset\n\n"
 printf "This script calculates recommended values for the ZVOL and snapshot space based on zpool free space.\n"
-printf "It is ${yellow}HIGHLY RECOMMENDED${nc} to use these defaults (ZVOL of 65% of dataset free space).\n"
-printf "However the script will allow the creation of a ZVOL that uses up to 90% of the dataset free space.\n"
+printf "It is ${yellow}HIGHLY RECOMMENDED${nc} to use these defaults (ZVOL of 65%% of dataset free space).\n"
+printf "However the script will allow the creation of a ZVOL that uses up to 90%% of the dataset free space.\n"
 printf "Please be aware that this may not be enough space to store the snapshots and, if the dataset runs\n"
 printf "out of space, the repo volume will be taken offline and require manual intervention to return to service.\n\n"
 printf "Recommended size of the ZVOL is ${yellow}${zvolsize}GB${nc}, maximum allowed size is ${yellow}${zvolmaxsize}GB${nc}.\n\n"
 while [ -z $inputzvolsize ]; do
     read -e -i "${zvolsize}" -p "Enter the desired size of the repo ZVOL device in GBs: " inputzvolsize
     if [ $inputzvolsize -gt $zvolmaxsize ]; then
-      printf "\n${red}***ERROR*** ${yellow}ZVOL size cannot be more than ${zvolmaxsize}GB (90% of dataset free space).${nc}\n\n"
+      printf "\n${red}***ERROR*** ${yellow}ZVOL size cannot be more than ${zvolmaxsize}GB (90%% of dataset free space).${nc}\n\n"
       inputzvolsize=""
     fi
 done
