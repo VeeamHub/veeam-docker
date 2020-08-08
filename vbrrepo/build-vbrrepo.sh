@@ -86,15 +86,15 @@ printf "This approach leaves some unreserved free space in the parent zfs filesy
 printf "in cases where an attacker tries to overwrite all backups and uses all available data/snapshot space.\n"
 printf "in the ${yellow}veeam${nc} dataset\n\n"
 printf "This script calculates recommended values for the ZVOL and snapshot space based on zfs filesystem available space.\n"
-printf "It is ${yellow}HIGHLY RECOMMENDED${nc} to use these defaults (ZVOL of 65% of dataset free space).\n"
-printf "However the script will allow the creation of a ZVOL that uses up to 90% of the dataset free space.\n"
+printf "It is ${yellow}HIGHLY RECOMMENDED${nc} to use these defaults (ZVOL of 65%% of dataset free space).\n"
+printf "However the script will allow the creation of a ZVOL that uses up to 90%% of the dataset free space.\n"
 printf "Please be aware that this may not be enough space to store the snapshots and, if the dataset runs\n"
 printf "out of space, the repo volume will be taken offline and require manual intervention to return to service.\n\n"
 printf "Recommended size of the ZVOL is ${yellow}${zvolsize}GB${nc}, maximum allowed size is ${yellow}${zvolmaxsize}GB${nc}.\n\n"
 while [ -z $inputzvolsize ]; do
     read -e -i "${zvolsize}" -p "Enter the desired size of the repo ZVOL device in GBs: " inputzvolsize
     if [ $inputzvolsize -gt $zvolmaxsize ]; then
-      printf "\n${red}***ERROR*** ${yellow}ZVOL size cannot be more than ${zvolmaxsize}GB (90% of dataset free space).${nc}\n\n"
+      printf "\n${red}***ERROR*** ${yellow}ZVOL size cannot be more than ${zvolmaxsize}GB (90%% of dataset free space).${nc}\n\n"
       inputzvolsize=""
     fi
 done
@@ -170,7 +170,7 @@ do
       printf "!!! enter this passphrase when importing the private key into Veeam. !!!${nc}\n"
       printf "Passphrase (or enter for unencrypted): "
       read -e passphrase
-      ssh-keygen -f ./veeam-auth-key -N "${passphrease}" -t rsa -C "veeam-auth-key"
+      ssh-keygen -f ./veeam-auth-key -N "${passphrase}" -t rsa -C "veeam-auth-key"
       printf "Moving public key file to ${yellow}${pubkeyfile}${nc}\n"
       mv "./veeam-auth-key.pub" "${pubkeyfile}"
       printf "${green}New SSH auth key generated, please copy ${yellow}veeam-auth-key${green} to your Veeam server\nand add it as a Linux private key credential (username = veeam).\nWhen adding this system as a managed server select this credential.${nc}\n"
