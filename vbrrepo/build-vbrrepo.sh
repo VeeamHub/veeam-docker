@@ -170,7 +170,7 @@ do
       printf "!!! enter this passphrase when importing the private key into Veeam. !!!${nc}\n"
       printf "Passphrase (or enter for unencrypted): "
       read -e passphrase
-      ssh-keygen -f ./veeam-auth-key -N "${passphrase}" -t rsa -C "veeam-auth-key"
+      ssh-keygen -f ./veeam-auth-key -N "${passphrase}" -t rsa -m pem -C "veeam-auth-key"
       printf "Moving public key file to ${yellow}${pubkeyfile}${nc}\n"
       mv "./veeam-auth-key.pub" "${pubkeyfile}"
       printf "${green}New SSH auth key generated, please copy ${yellow}veeam-auth-key${green} to your Veeam server\nand add it as a Linux private key credential (username = veeam).\nWhen adding this system as a managed server select this credential.${nc}\n"
