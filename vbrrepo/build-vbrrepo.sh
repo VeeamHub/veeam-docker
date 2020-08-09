@@ -74,32 +74,32 @@ while [ -z $zpool ]; do
     printf "${red}ERROR:${nc} Failed to get zpool with name ${yellow}${zpoolname}${nc}, please try again!\n"
   fi
 done
-zpoolfreebytes=$(zpool list -H -p -o free $zpool)
-let zpoolfree=$zpoolfreebytes/1024/1024/1024
-let dssize=$zpoolfree*95/100
+zfsavailbytes=$(zfs list -H -p -o available $zpool)
+let zfsavail=$zfsavailbytes/1024/1024/1024
+let dssize=$zfsavail*95/100
 let zvolsize=$dssize*65/100
 let zvolmaxsize=$dssize*90/100
-printf "\nZPOOL ${yellow}${zpool}${nc} has ${yellow}${zpoolfree}GB${nc} free space.\n"
+printf "\nZFS FileSystem ${yellow}${zpool}${nc} has ${yellow}${zfsavail}GB${nc} available space.\n"
 printf "A dataset named ${yellow}veeam${nc} with ${yellow}${dssize}GB${nc} reserved space in zpool ${yellow}${zpool}${nc} will be created.\n"
 printf "A ZVOL with the name ${yellow}repo_vol${nc} will be created within this dataset.\n"
-printf "This approach leaves some unreserved free space in the parent zpool that can be useful for recovery\n"
+printf "This approach leaves some unreserved free space in the parent zfs filesystem that can be useful for recovery\n"
 printf "in cases where an attacker tries to overwrite all backups and uses all available data/snapshot space.\n"
 printf "in the ${yellow}veeam${nc} dataset\n\n"
-printf "This script calculates recommended values for the ZVOL and snapshot space based on zpool free space.\n"
-printf "It is ${yellow}HIGHLY RECOMMENDED${nc} to use these defaults (ZVOL of 65% of dataset free space).\n"
-printf "However the script will allow the creation of a ZVOL that uses up to 90% of the dataset free space.\n"
+printf "This script calculates recommended values for the ZVOL and snapshot space based on zfs filesystem available space.\n"
+printf "It is ${yellow}HIGHLY RECOMMENDED${nc} to use these defaults (ZVOL of 65%% of dataset free space).\n"
+printf "However the script will allow the creation of a ZVOL that uses up to 90%% of the dataset free space.\n"
 printf "Please be aware that this may not be enough space to store the snapshots and, if the dataset runs\n"
 printf "out of space, the repo volume will be taken offline and require manual intervention to return to service.\n\n"
 printf "Recommended size of the ZVOL is ${yellow}${zvolsize}GB${nc}, maximum allowed size is ${yellow}${zvolmaxsize}GB${nc}.\n\n"
 while [ -z $inputzvolsize ]; do
     read -e -i "${zvolsize}" -p "Enter the desired size of the repo ZVOL device in GBs: " inputzvolsize
     if [ $inputzvolsize -gt $zvolmaxsize ]; then
-      printf "\n${red}***ERROR*** ${yellow}ZVOL size cannot be more than ${zvolmaxsize}GB (90% of dataset free space).${nc}\n\n"
+      printf "\n${red}***ERROR*** ${yellow}ZVOL size cannot be more than ${zvolmaxsize}GB (90%% of dataset free space).${nc}\n\n"
       inputzvolsize=""
     fi
 done
 zvolsize=$inputzvolsize
-printf "\nCreating dataset ${yellow}${zpool}/veeam${nc} with quota/reservation of ${yellow}${dssize}GB${nc} on ZPOOL ${yellow}${zpool}${nc}...\n"
+printf "\nCreating dataset ${yellow}${zpool}/veeam${nc} with quota/reservation of ${yellow}${dssize}GB${nc} on ZFS filesystem ${yellow}${zpool}${nc}...\n"
 zfs create ${zpool}/veeam
 zfs set quota=${dssize}GB reservation=${dssize}GB ${zpool}/veeam
 printf "Creating ZVOL ${yellow}repo_vol${nc} of size ${yellow}${zvolsize}GB${nc} on dataset ${yellow}${zpool}/veeam${nc}...\n"
@@ -170,7 +170,7 @@ do
       printf "!!! enter this passphrase when importing the private key into Veeam. !!!${nc}\n"
       printf "Passphrase (or enter for unencrypted): "
       read -e passphrase
-      ssh-keygen -f ./veeam-auth-key -N "${passphrease}" -t rsa -C "veeam-auth-key"
+      ssh-keygen -f ./veeam-auth-key -N "${passphrase}" -t rsa -m pem -C "veeam-auth-key"
       printf "Moving public key file to ${yellow}${pubkeyfile}${nc}\n"
       mv "./veeam-auth-key.pub" "${pubkeyfile}"
       printf "${green}New SSH auth key generated, please copy ${yellow}veeam-auth-key${green} to your Veeam server\nand add it as a Linux private key credential (username = veeam).\nWhen adding this system as a managed server select this credential.${nc}\n"
